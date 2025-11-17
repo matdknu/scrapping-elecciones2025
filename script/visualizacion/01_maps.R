@@ -89,24 +89,179 @@ comunas_sin_dato |> print(n = 50)
 
 # ---- 8. Ejemplo de mapa (opcional) ----
 # library(ggplot2)
-maps <- mapa_ganador |> 
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(forcats)
+
+mapa_ganador_plot <- mapa_ganador |>
+  mutate(
+    candidato_lab = case_when(
+      candidato_ganador == "EVELYN MATTHEI FORNET" ~ "Evelyn Matthei Fornet",
+      candidato_ganador == "FRANCO PARISI FERNANDEZ" ~ "Franco Parisi Fernandez",
+      candidato_ganador == "JEANNETTE JARA ROMAN" ~ "Jeannette Jara Roman",
+      candidato_ganador == "JOHANNES KAISER BARENTS-VON HOHENHAGEN" ~
+        "Johannes Kaiser Barents-von Hohenhagen",
+      candidato_ganador == "JOSE ANTONIO KAST RIST" ~ "Jose Antonio Kast Rist",
+      TRUE ~ NA_character_
+    ),
+    candidato_lab = fct_relevel(
+      candidato_lab,
+      "Evelyn Matthei Fornet",
+      "Franco Parisi Fernandez",
+      "Jeannette Jara Roman",
+      "Johannes Kaiser Barents-von Hohenhagen",
+      "Jose Antonio Kast Rist"
+    )
+  )
+
+maps <- mapa_ganador_plot |>
   ggplot() +
-  geom_sf(aes(geometry = geometry, 
-              fill = candidato_ganador),
-          col = "white") 
+  geom_sf(aes(geometry = geometry,
+              fill = candidato_lab),
+          colour = "white", linewidth = 0.15) +
+  scale_fill_manual(
+    name = "Candidato ganador",
+    values = c(
+      "Jose Antonio Kast Rist" = "#377eb8",      # azul
+      "Jeannette Jara Roman" = "#d73027",        # rojo
+      "Franco Parisi Fernandez" = "#1b9e77",     # verde
+      "Evelyn Matthei Fornet" = "#ffd92f",       # amarillo
+      "Johannes Kaiser Barents-von Hohenhagen" = "#4daf4a"  # verde distinto
+    ),
+    na.value = "grey70"
+  ) +
+  coord_sf(expand = FALSE) +
+  labs(
+    title = "Candidato presidencial ganador por comuna 2025",
+    fill  = "Candidato ganador",
+    caption = "Fuente: Servel. Elaboración propia."
+  ) +
+  theme_void(base_size = 11) +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    legend.text  = element_text(size = 9),
+    plot.title   = element_text(face = "bold", hjust = 0.5),
+    plot.margin  = margin(5, 5, 5, 5)
+  )
 
 maps
+
+
 ggsave(
-  file.path(path_image, paste0("maps", ts, ".png")),
+  file.path(path_image, paste0("maps_chile", ts, ".png")),
   plot = maps,
   width = 7, height = 5, dpi = 300
 )
 
 
+
+mapa_ganador |> frq(codigo_region)
 mapa_metro <- mapa_ganador |> filter(codigo_region == 13)
 
-mapa_metro |> 
+map_rm <-mapa_metro |> 
   ggplot() +
   geom_sf(aes(geometry = geometry, 
               fill = candidato_ganador),
           col = "white") 
+
+
+map_rm
+
+ggsave(
+  file.path(path_image, paste0("maps_rm", ts, ".png")),
+  plot = map_rm, 
+  width = 7, height = 5, dpi = 300
+)
+
+
+
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(purrr)
+library(glue)
+
+# Vector de códigos de región
+regiones <- sort(unique(mapa_ganador$codigo_region))
+
+mapa_ganador |> select(comuna_mapa)
+
+plot_region <- function(reg) {
+  mapa_ganador |>
+    filter(codigo_region == reg) |>
+    ggplot() +
+    geom_sf(aes(geometry = geometry,
+                fill = candidato_ganador),
+            colour = "white", linewidth = 0.2) +
+    labs(
+      title = glue("Candidato ganador - Región {reg}"),
+      fill  = "Candidato ganador"
+    ) +
+    theme_void() +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(hjust = 0.5, face = "bold")
+    )
+}
+
+# Lista con todos los mapas (uno por región)
+plots_por_region <- map(regiones, plot_region)
+names(plots_por_region) <- regiones
+
+# Ver, por ejemplo, la Región Metropolitana (13)
+plots_por_region[["13"]]
+
+
+
+plots_por_region[["01"]]
+plots_por_region[["02"]]
+plots_por_region[["03"]]
+plots_por_region[["04"]]
+plots_por_region[["05"]]
+plots_por_region[["06"]]
+plots_por_region[["07"]]
+plots_por_region[["08"]]
+plots_por_region[["09"]]
+plots_por_region[["10"]]
+plots_por_region[["11"]]
+plots_por_region[["12"]]
+plots_por_region[["13"]]
+plots_por_region[["14"]]
+plots_por_region[["15"]]
+plots_por_region[["16"]]
+
+
+# (Opcional) Guardar cada mapa en un archivo PNG
+walk(regiones, \(reg) {
+  ggsave(
+    filename = glue("output/map_region_{reg}.png"),
+    plot     = plot_region(reg),
+    width = 6, height = 6, dpi = 300
+  )
+})
+
+
+# Maps 2021 -----
+
+proc_primera21 <- readRDS("datos/proc_data/proc_primera21.rds")
+
+mapa_comunas <- chilemapas::mapa_comunas |>
+  left_join(
+    chilemapas::codigos_territoriales |>
+      select(codigo_comuna, nombre_comuna),
+    by = "codigo_comuna"
+  ) |>
+  rename(comuna_mapa = nombre_comuna) |>
+  mutate(
+    comuna_std = normalizar_comuna(comuna_mapa)
+  )
+
+
+mapa_comunas
+
+
+
+
+
