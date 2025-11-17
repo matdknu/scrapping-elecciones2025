@@ -1,7 +1,7 @@
 # Resultados
 
-Treemap de los resultados de primera vuelta
+Candidato presidencial - 2025 (Primera vuelta)
 
-![](image/treemap_20251116_201720.png)
+![](image/maps_chile20251117_103755.png)
 
-![](image/maps20251117_004240.png)
+![](image/treemap_.png)
